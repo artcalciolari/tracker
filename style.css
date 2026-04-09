@@ -297,6 +297,15 @@ body {
   transition: border-color 0.2s ease;
 }
 
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 .form-group input:focus {
   outline: none;
   border-color: #666;

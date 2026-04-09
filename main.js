@@ -150,6 +150,7 @@ function loadState() {
         appState.closers.forEach(c => {
            if (c.confirmed === undefined) c.confirmed = 0;
            if (c.noShows === undefined) c.noShows = 0;
+           if (c.notes === undefined) c.notes = '';
         });
       }
     } catch (e) {
@@ -205,7 +206,8 @@ setupForm.addEventListener('submit', async (e) => {
         name: input.value.trim(),
         count: 0,
         confirmed: 0,
-        noShows: 0
+        noShows: 0,
+        notes: ''
       });
     }
   });
@@ -216,7 +218,8 @@ setupForm.addEventListener('submit', async (e) => {
       name: 'Cafofo',
       count: 0,
       confirmed: 0,
-      noShows: 0
+      noShows: 0,
+      notes: ''
     });
   }
 
@@ -373,6 +376,38 @@ function renderUI() {
        card.appendChild(statsContainer);
     }
     
+    // Área de Anotações (Geral para todos os cards)
+    const notesInput = document.createElement('textarea');
+    notesInput.placeholder = 'Anotações...';
+    notesInput.value = closer.notes || '';
+    notesInput.style.width = '100%';
+    notesInput.style.marginTop = '1rem';
+    notesInput.style.padding = '0.6rem';
+    notesInput.style.fontSize = '0.8rem';
+    notesInput.style.background = 'rgba(255, 255, 255, 0.05)';
+    notesInput.style.border = '1px solid #333';
+    notesInput.style.borderRadius = '6px';
+    notesInput.style.color = '#fff';
+    notesInput.style.resize = 'none';
+    notesInput.style.height = '65px';
+    notesInput.style.fontFamily = 'inherit';
+    notesInput.style.outline = 'none';
+    
+    notesInput.addEventListener('focus', () => {
+      notesInput.style.borderColor = '#666';
+    });
+    notesInput.addEventListener('blur', () => {
+      notesInput.style.borderColor = '#333';
+    });
+    
+    // Salva direto no LocalStorage para não ativar o renderUI() na tela toda tirando o foco
+    notesInput.addEventListener('input', (e) => {
+       closer.notes = e.target.value;
+       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    });
+
+    card.appendChild(notesInput);
+
     closersGrid.appendChild(card);
   });
 
@@ -413,6 +448,7 @@ btnReset.addEventListener('click', async () => {
          c.count = 0;
          c.confirmed = 0;
          c.noShows = 0;
+         c.notes = '';
       });
       appState.leadsCount = 0;
       if (leadsCountInput) leadsCountInput.value = 0;
