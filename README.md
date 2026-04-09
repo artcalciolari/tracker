@@ -13,15 +13,17 @@ Um painel web intuitivo e moderno, projetado especificamente para gerenciar, de 
 - 🏠 **Opção Especial "Cafofo":** Inclusão imediata e opcional deste vendedor diretamente pelo painel de setup.
 - 🎯 **Totalizadores:** Tenha tanto as contagens isoladas por indivíduo quanto a somatória do dia na mesma tela.
 - 🎨 **Design Moderno:** Uma estética limpa feita com *Glassmorphism*, fácil para os olhos durante sua longa rotina de trabalho.
+- 📅 **Google Calendar:** Visualize imediatamente os compromissos dos Closers para o dia atual direto do painel.
 
 ## 🛠️ O que foi usado?
 O projeto utiliza uma stack direta, leve e sem atritos visando facilidade de alteração e deploy nas principais plataformas.
 - **HTML5**
 - **CSS3 (Vanilla)** com Design System base (paletas de cores e tipografia no padrão Inter)
-- **O bom e velho Javascript Vanilla**, gerenciando estados e manipulando a DOM de forma responsiva.
+- **Javascript Vanilla**, gerenciando estados e consumindo as APIs REST.
+- **Google Identity Services & Calendar API** para o painel avançado de horários.
 
 ## 💻 Como Rodar?
 Por não usar bundlers nem dependências pesadas, é incrivelmente fácil rodar:
 1. Abra a pasta do projeto.
-2. Dê dois cliques no arquivo `index.html` (ou use ferramentas como o *Live Server* do VS Code).
-3. Preencha seus dados no modal inicial... e pronto. Você está pronto para decolar nas métricas.
+2. Inicie o projeto usando um *Live Server* no VS Code ou no seu editor preferido (Isso é obrigatório para o Google Calendar funcionar, já que a Google bloqueia execuções baseadas em duplo clique `file://`).
+3. Preencha seus dados no modal inicial e conecte perfeitamente com sua conta. Você está pronto para decolar nas métricas.

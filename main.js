@@ -2,8 +2,7 @@
 const STORAGE_KEY = 'appointmentTrackerState';
 let appState = {
   sdrName: '',
-  closers: [], // { id: string, name: string, count: number }
-  googleClientId: ''
+  closers: [] // { id: string, name: string, count: number }
 };
 
 // --- DOM Elements ---
@@ -24,7 +23,6 @@ const btnClearAll = document.getElementById('btn-clear-all');
 const dialogModal = document.getElementById('dialog-modal');
 const dialogTitle = document.getElementById('dialog-title');
 const dialogMessage = document.getElementById('dialog-message');
-const dialogInput = document.getElementById('dialog-input');
 const dialogBtnCancel = document.getElementById('dialog-btn-cancel');
 const dialogBtnConfirm = document.getElementById('dialog-btn-confirm');
 
@@ -34,14 +32,12 @@ const calendarTitle = document.getElementById('calendar-title');
 const calendarEventsList = document.getElementById('calendar-events-list');
 const calendarBtnClose = document.getElementById('calendar-btn-close');
 
-const inputClientId = document.getElementById('input-client-id');
 const btnAuthGoogle = document.getElementById('btn-auth-google');
 
 function showDialog(title, message, isConfirm = false) {
   return new Promise((resolve) => {
     dialogTitle.textContent = title;
     dialogMessage.textContent = message;
-    dialogInput.classList.add('hidden'); // garante que está escondido
     
     if (isConfirm) {
       dialogBtnCancel.style.display = 'block';
@@ -73,43 +69,6 @@ function showDialog(title, message, isConfirm = false) {
   });
 }
 
-function showPrompt(title, message, placeholder = '') {
-  return new Promise((resolve) => {
-    dialogTitle.textContent = title;
-    dialogMessage.textContent = message;
-    
-    dialogInput.placeholder = placeholder;
-    dialogInput.value = '';
-    dialogInput.classList.remove('hidden');
-    
-    dialogBtnCancel.style.display = 'block';
-    dialogBtnConfirm.textContent = 'Confirmar';
-
-    dialogModal.classList.remove('hidden');
-    dialogInput.focus();
-
-    const handleConfirm = () => {
-      cleanup();
-      resolve(dialogInput.value.trim());
-    };
-
-    const handleCancel = () => {
-      cleanup();
-      resolve(null);
-    };
-
-    const cleanup = () => {
-      dialogModal.classList.add('hidden');
-      dialogInput.classList.add('hidden');
-      dialogBtnConfirm.removeEventListener('click', handleConfirm);
-      dialogBtnCancel.removeEventListener('click', handleCancel);
-    };
-
-    dialogBtnConfirm.addEventListener('click', handleConfirm);
-    dialogBtnCancel.addEventListener('click', handleCancel);
-  });
-}
-
 // --- Initialization ---
 function init() {
   loadState();
@@ -119,7 +78,7 @@ function init() {
   if (appState && appState.closers && appState.closers.length > 0) {
     setupModal.classList.add('hidden');
     renderUI();
-    if(appState.googleClientId && typeof checkAuthReady === 'function'){
+    if(typeof checkAuthReady === 'function'){
       checkAuthReady();
     }
   } else {
@@ -128,17 +87,6 @@ function init() {
 
   if (btnAuthGoogle) {
     btnAuthGoogle.addEventListener('click', async () => {
-      if (!appState || !appState.googleClientId) {
-        const clientId = await showPrompt("Client ID não configurado", "Por favor, insira o seu Client ID gerado no Google Cloud:", "Ex: 1234.apps.googleusercontent.com");
-        if (clientId && clientId !== "") {
-          appState.googleClientId = clientId;
-          saveState();
-          if (typeof checkAuthReady === 'function') checkAuthReady();
-        } else {
-          return;
-        }
-      }
-
       try {
         await handleGoogleAuth();
         renderUI(); // re-render to show calendar icons if they were hidden
@@ -216,7 +164,6 @@ setupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   
   const sdrName = inputSdrName.value.trim();
-  const clientId = inputClientId ? inputClientId.value.trim() : '';
   const nameInputs = document.querySelectorAll('.closer-name-input');
   
   const closers = [];
@@ -241,12 +188,11 @@ setupForm.addEventListener('submit', async (e) => {
   if (sdrName && closers.length > 0) {
     appState = {
        sdrName,
-       closers,
-       googleClientId: clientId
+       closers
     };
     saveState();
     setupModal.classList.add('hidden');
-    if(clientId && typeof checkAuthReady === 'function') checkAuthReady();
+    if(typeof checkAuthReady === 'function') checkAuthReady();
   } else {
     await showDialog("Alerta", "Por favor, preencha o seu nome e adicione pelo menos um Closer/Pessoa.", false);
   }

@@ -26,11 +26,13 @@ function gisLoaded() {
   checkAuthReady();
 }
 
+const CLIENT_ID = '1078839488832-1a6eqeei5s5flqu0m0tjqq1g1cimoqov.apps.googleusercontent.com';
+
 function checkAuthReady() {
-  if (gapiInited && gisInited && appState && appState.googleClientId) {
-    // Inicializa o token client apenas se o Google Identity carregou e o Client ID existe
+  if (gapiInited && gisInited) {
+    // Inicializa o token client apenas se o Google Identity carregou
     tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: appState.googleClientId,
+      client_id: CLIENT_ID,
       scope: SCOPES,
       callback: '', // defined below
     });
