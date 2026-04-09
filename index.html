@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tracker de Agendamentos</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-left">
+      <h1 id="sdr-name-display" class="user-name">SDR</h1>
+      <p id="current-date-time" class="datetime">Carregando data e hora...</p>
+      <p class="total-container">
+        Total de Agendamentos: <span id="total-count">0</span>
+      </p>
+    </div>
+    <div class="header-right">
+      <button id="btn-reset" class="btn btn-secondary">Resetar</button>
+      <button id="btn-clear-all" class="btn btn-danger">Limpar Tudo</button>
+    </div>
+  </header>
+
+  <!-- MAIN AREA: ClOSER CARDS -->
+  <main class="main-content">
+    <div id="closers-grid" class="cards-grid">
+      <!-- Cards serão injetados aqui -->
+    </div>
+  </main>
+
+  <!-- MODAL DE CONFIGURAÇÃO -->
+  <div id="setup-modal" class="modal-overlay hidden">
+    <div class="modal glassmorphism">
+      <h2>Configuração Inicial</h2>
+      <p class="modal-subtitle">Configure o seu tracker de agendamentos.</p>
+      
+      <form id="setup-form">
+        <div class="form-group">
+          <label for="input-sdr-name">Seu Nome (SDR)</label>
+          <input type="text" id="input-sdr-name" required placeholder="Ex: Arthur">
+        </div>
+
+        <div class="form-group">
+          <label for="input-closers-count">Quantidade de Pessoas</label>
+          <input type="number" id="input-closers-count" min="1" max="20" required placeholder="Ex: 3">
+        </div>
+
+        <div id="dynamic-closers-names" class="dynamic-inputs">
+          <!-- Inputs para nomes dos closers aparecem aqui -->
+        </div>
+
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="checkbox-cafofo">
+          <label for="checkbox-cafofo">Incluir "Cafofo" como vendedor?</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Salvar e Começar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE ALERTA/CONFIRMAÇÃO -->
+  <div id="dialog-modal" class="modal-overlay hidden" style="z-index: 2000;">
+    <div class="modal">
+      <h2 id="dialog-title">Atenção</h2>
+      <p id="dialog-message" class="modal-subtitle">Mensagem</p>
+      <div class="dialog-actions" style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <button id="dialog-btn-cancel" class="btn" style="border-color: #333; flex: 1;">Cancelar</button>
+        <button id="dialog-btn-confirm" class="btn btn-primary" style="flex: 1;">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
