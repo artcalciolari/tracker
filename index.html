@@ -81,8 +81,14 @@
   <!-- MODAL DE AGENDA -->
   <div id="calendar-modal" class="modal-overlay hidden" style="z-index: 1500;">
     <div class="modal glassmorphism" style="max-width: 500px; width: 90%;">
-      <h2 id="calendar-title">Agenda: Nome</h2>
-      <p class="modal-subtitle">Reuniões de hoje</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <h2 id="calendar-title" style="margin-bottom: 0;">Agenda: Nome</h2>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <label for="calendar-days-input" style="font-size: 0.85rem; color: #a0aec0;">Dias:</label>
+          <input type="number" id="calendar-days-input" value="1" min="1" max="14" style="width: 60px; padding: 0.3rem; background: #000; border: 1px solid #333; color: #fff; border-radius: 4px; text-align: center;">
+        </div>
+      </div>
+      <p class="modal-subtitle">Reuniões programadas</p>
       
       <div id="calendar-events-list" class="events-list">
         <!-- Eventos serão injetados aqui -->

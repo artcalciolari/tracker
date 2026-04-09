@@ -84,19 +84,22 @@ async function findCalendarForCloser(closerName) {
   }
 }
 
-async function getTodayEvents(calendarId) {
+async function getEventsForDays(calendarId, days = 1) {
   try {
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+    
+    // Calcula o Fim do Dia baseando-se na quantidade de dias estendida. Se days=1, é hoje às 23:59.
+    const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (days - 1), 23, 59, 59);
+    const endBoundary = endDate.toISOString();
 
     const response = await gapi.client.calendar.events.list({
       'calendarId': calendarId,
       'timeMin': startOfDay,
-      'timeMax': endOfDay,
+      'timeMax': endBoundary,
       'showDeleted': false,
       'singleEvents': true,
-      'maxResults': 50,
+      'maxResults': 100,
       'orderBy': 'startTime'
     });
     

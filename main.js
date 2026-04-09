@@ -31,6 +31,9 @@ const calendarModal = document.getElementById('calendar-modal');
 const calendarTitle = document.getElementById('calendar-title');
 const calendarEventsList = document.getElementById('calendar-events-list');
 const calendarBtnClose = document.getElementById('calendar-btn-close');
+const calendarDaysInput = document.getElementById('calendar-days-input');
+
+let activeCalendarName = null;
 
 const btnAuthGoogle = document.getElementById('btn-auth-google');
 
@@ -100,6 +103,17 @@ function init() {
   if (calendarBtnClose) {
     calendarBtnClose.addEventListener('click', () => {
       calendarModal.classList.add('hidden');
+    });
+  }
+
+  if (calendarDaysInput) {
+    calendarDaysInput.addEventListener('change', (e) => {
+      if (activeCalendarName) {
+        let days = parseInt(e.target.value);
+        if (isNaN(days) || days < 1) days = 1;
+        if (days > 14) days = 14;
+        openCalendarModal(activeCalendarName, days);
+      }
     });
   }
 }
@@ -298,9 +312,16 @@ btnClearAll.addEventListener('click', async () => {
 });
 
 // --- Modal Calendar Data ---
-async function openCalendarModal(closerName) {
+async function openCalendarModal(closerName, days = null) {
+  activeCalendarName = closerName;
+  if (days === null) {
+    days = parseInt(calendarDaysInput.value) || 1;
+  } else {
+    calendarDaysInput.value = days;
+  }
+
   calendarTitle.textContent = `Agenda: ${closerName}`;
-  calendarEventsList.innerHTML = `<p class="text-center" style="color: #a0aec0; padding: 2rem 0;">Buscando calendário...</p>`;
+  calendarEventsList.innerHTML = `<p class="text-center" style="color: #a0aec0; padding: 2rem 0;">Buscando calendário para ${days} dia(s)...</p>`;
   calendarModal.classList.remove('hidden');
 
   const calendarId = await findCalendarForCloser(closerName);
@@ -310,11 +331,11 @@ async function openCalendarModal(closerName) {
     return;
   }
 
-  const events = await getTodayEvents(calendarId);
+  const events = await getEventsForDays(calendarId, days);
   calendarEventsList.innerHTML = '';
 
   if (events.length === 0) {
-    calendarEventsList.innerHTML = `<p class="text-center" style="color: #51cf66; padding: 2rem 0;">Agenda livre hoje!</p>`;
+    calendarEventsList.innerHTML = `<p class="text-center" style="color: #51cf66; padding: 2rem 0;">Nenhuma reunião nestes ${days} dia(s)!</p>`;
     return;
   }
 
@@ -326,7 +347,13 @@ async function openCalendarModal(closerName) {
     if(event.start.dateTime) {
        const startDate = new Date(event.start.dateTime);
        const endDate = new Date(event.end.dateTime);
-       timeString = `${startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})} - ${endDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
+       
+       let datePrefix = '';
+       if (days > 1) {
+           datePrefix = startDate.toLocaleDateString('pt-BR', {day: '2-digit', month:'2-digit'}) + ' • ';
+       }
+
+       timeString = `${datePrefix}${startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})} - ${endDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
     }
 
     eventItem.innerHTML = `
