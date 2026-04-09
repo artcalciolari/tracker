@@ -24,6 +24,7 @@ const btnClearAll = document.getElementById('btn-clear-all');
 const dialogModal = document.getElementById('dialog-modal');
 const dialogTitle = document.getElementById('dialog-title');
 const dialogMessage = document.getElementById('dialog-message');
+const dialogInput = document.getElementById('dialog-input');
 const dialogBtnCancel = document.getElementById('dialog-btn-cancel');
 const dialogBtnConfirm = document.getElementById('dialog-btn-confirm');
 
@@ -40,6 +41,7 @@ function showDialog(title, message, isConfirm = false) {
   return new Promise((resolve) => {
     dialogTitle.textContent = title;
     dialogMessage.textContent = message;
+    dialogInput.classList.add('hidden'); // garante que está escondido
     
     if (isConfirm) {
       dialogBtnCancel.style.display = 'block';
@@ -71,6 +73,43 @@ function showDialog(title, message, isConfirm = false) {
   });
 }
 
+function showPrompt(title, message, placeholder = '') {
+  return new Promise((resolve) => {
+    dialogTitle.textContent = title;
+    dialogMessage.textContent = message;
+    
+    dialogInput.placeholder = placeholder;
+    dialogInput.value = '';
+    dialogInput.classList.remove('hidden');
+    
+    dialogBtnCancel.style.display = 'block';
+    dialogBtnConfirm.textContent = 'Confirmar';
+
+    dialogModal.classList.remove('hidden');
+    dialogInput.focus();
+
+    const handleConfirm = () => {
+      cleanup();
+      resolve(dialogInput.value.trim());
+    };
+
+    const handleCancel = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    const cleanup = () => {
+      dialogModal.classList.add('hidden');
+      dialogInput.classList.add('hidden');
+      dialogBtnConfirm.removeEventListener('click', handleConfirm);
+      dialogBtnCancel.removeEventListener('click', handleCancel);
+    };
+
+    dialogBtnConfirm.addEventListener('click', handleConfirm);
+    dialogBtnCancel.addEventListener('click', handleCancel);
+  });
+}
+
 // --- Initialization ---
 function init() {
   loadState();
@@ -90,9 +129,9 @@ function init() {
   if (btnAuthGoogle) {
     btnAuthGoogle.addEventListener('click', async () => {
       if (!appState || !appState.googleClientId) {
-        const clientId = prompt("Google Client ID não configurado.\nPor favor, insira o seu Client ID gerado no Google Cloud:");
-        if (clientId && clientId.trim() !== "") {
-          appState.googleClientId = clientId.trim();
+        const clientId = await showPrompt("Client ID não configurado", "Por favor, insira o seu Client ID gerado no Google Cloud:", "Ex: 1234.apps.googleusercontent.com");
+        if (clientId && clientId !== "") {
+          appState.googleClientId = clientId;
           saveState();
           if (typeof checkAuthReady === 'function') checkAuthReady();
         } else {
