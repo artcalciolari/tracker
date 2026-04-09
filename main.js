@@ -236,8 +236,8 @@ function renderUI() {
     actionsContainer.appendChild(btnDecrement);
     actionsContainer.appendChild(btnIncrement);
 
-    // Adiciona botão "Ver Agenda" se estiver logado via OAuth
-    if (typeof gapi !== 'undefined' && gapi.client && gapi.client.getToken() !== null) {
+    // Adiciona botão "Ver Agenda" se estiver logado via OAuth e não for o Cafofo
+    if (closer.name !== 'Cafofo' && typeof gapi !== 'undefined' && gapi.client && gapi.client.getToken() !== null) {
       const btnCalendar = document.createElement('button');
       btnCalendar.className = 'btn-circle btn-calendar';
       btnCalendar.innerHTML = '📅';
