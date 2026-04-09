@@ -2,7 +2,8 @@
 const STORAGE_KEY = 'appointmentTrackerState';
 let appState = {
   sdrName: '',
-  closers: [] // { id: string, name: string, count: number }
+  closers: [], // { id: string, name: string, count: number, confirmed: number, noShows: number }
+  leadsCount: 0
 };
 
 // --- DOM Elements ---
@@ -32,6 +33,7 @@ const calendarTitle = document.getElementById('calendar-title');
 const calendarEventsList = document.getElementById('calendar-events-list');
 const calendarBtnClose = document.getElementById('calendar-btn-close');
 const calendarDaysInput = document.getElementById('calendar-days-input');
+const leadsCountInput = document.getElementById('leads-count-input');
 
 let activeCalendarName = null;
 
@@ -116,6 +118,14 @@ function init() {
       }
     });
   }
+
+  if (leadsCountInput) {
+    leadsCountInput.value = appState.leadsCount || 0;
+    leadsCountInput.addEventListener('change', (e) => {
+       appState.leadsCount = parseInt(e.target.value) || 0;
+       saveState();
+    });
+  }
 }
 
 // --- Clock Logic ---
@@ -135,6 +145,13 @@ function loadState() {
   if (stored) {
     try {
       appState = JSON.parse(stored);
+      if (appState.leadsCount === undefined) appState.leadsCount = 0;
+      if (appState.closers) {
+        appState.closers.forEach(c => {
+           if (c.confirmed === undefined) c.confirmed = 0;
+           if (c.noShows === undefined) c.noShows = 0;
+        });
+      }
     } catch (e) {
       console.error('Error parsing local storage data.', e);
     }
@@ -186,7 +203,9 @@ setupForm.addEventListener('submit', async (e) => {
       closers.push({
         id: `closer-${Date.now()}-${index}`,
         name: input.value.trim(),
-        count: 0
+        count: 0,
+        confirmed: 0,
+        noShows: 0
       });
     }
   });
@@ -195,14 +214,17 @@ setupForm.addEventListener('submit', async (e) => {
     closers.push({
       id: `closer-cafofo-${Date.now()}`,
       name: 'Cafofo',
-      count: 0
+      count: 0,
+      confirmed: 0,
+      noShows: 0
     });
   }
 
   if (sdrName && closers.length > 0) {
     appState = {
        sdrName,
-       closers
+       closers,
+       leadsCount: 0
     };
     saveState();
     setupModal.classList.add('hidden');
@@ -270,6 +292,87 @@ function renderUI() {
     card.appendChild(actionsContainer);
     card.appendChild(nameDisplay);
     
+    if (closer.name !== 'Cafofo') {
+       const statsContainer = document.createElement('div');
+       statsContainer.style.display = 'flex';
+       statsContainer.style.justifyContent = 'space-between';
+       statsContainer.style.width = '100%';
+       statsContainer.style.marginTop = '1.5rem';
+       statsContainer.style.borderTop = '1px solid #333';
+       statsContainer.style.paddingTop = '1rem';
+
+       const confWrapper = document.createElement('div');
+       confWrapper.style.display = 'flex';
+       confWrapper.style.flexDirection = 'column';
+       confWrapper.style.alignItems = 'center';
+       confWrapper.style.gap = '0.3rem';
+       
+       const confLabel = document.createElement('span');
+       confLabel.style.fontSize = '0.75rem';
+       confLabel.style.color = '#a1a1aa';
+       confLabel.textContent = 'Confirmados';
+
+       const confControls = document.createElement('div');
+       confControls.style.display = 'flex';
+       confControls.style.alignItems = 'center';
+       confControls.style.gap = '0.5rem';
+
+       const confMinus = document.createElement('button');
+       confMinus.className = 'btn-micro';
+       confMinus.textContent = '-';
+       confMinus.addEventListener('click', () => updateSubCount(closer.id, 'confirmed', -1));
+       
+       const confCount = document.createElement('span');
+       confCount.style.fontWeight = '600';
+       confCount.style.color = '#fff';
+       confCount.textContent = closer.confirmed;
+
+       const confPlus = document.createElement('button');
+       confPlus.className = 'btn-micro';
+       confPlus.textContent = '+';
+       confPlus.addEventListener('click', () => updateSubCount(closer.id, 'confirmed', 1));
+
+       confControls.append(confMinus, confCount, confPlus);
+       confWrapper.append(confLabel, confControls);
+
+       const nsWrapper = document.createElement('div');
+       nsWrapper.style.display = 'flex';
+       nsWrapper.style.flexDirection = 'column';
+       nsWrapper.style.alignItems = 'center';
+       nsWrapper.style.gap = '0.3rem';
+       
+       const nsLabel = document.createElement('span');
+       nsLabel.style.fontSize = '0.75rem';
+       nsLabel.style.color = '#a1a1aa';
+       nsLabel.textContent = 'No-shows';
+
+       const nsControls = document.createElement('div');
+       nsControls.style.display = 'flex';
+       nsControls.style.alignItems = 'center';
+       nsControls.style.gap = '0.5rem';
+
+       const nsMinus = document.createElement('button');
+       nsMinus.className = 'btn-micro';
+       nsMinus.textContent = '-';
+       nsMinus.addEventListener('click', () => updateSubCount(closer.id, 'noShows', -1));
+       
+       const nsCount = document.createElement('span');
+       nsCount.style.fontWeight = '600';
+       nsCount.style.color = '#ff6b6b';
+       nsCount.textContent = closer.noShows;
+
+       const nsPlus = document.createElement('button');
+       nsPlus.className = 'btn-micro';
+       nsPlus.textContent = '+';
+       nsPlus.addEventListener('click', () => updateSubCount(closer.id, 'noShows', 1));
+
+       nsControls.append(nsMinus, nsCount, nsPlus);
+       nsWrapper.append(nsLabel, nsControls);
+
+       statsContainer.append(confWrapper, nsWrapper);
+       card.appendChild(statsContainer);
+    }
+    
     closersGrid.appendChild(card);
   });
 
@@ -293,11 +396,26 @@ function decrementCount(id) {
   }
 }
 
+function updateSubCount(id, type, delta) {
+  const closer = appState.closers.find(c => c.id === id);
+  if (closer) {
+    closer[type] += delta;
+    if (closer[type] < 0) closer[type] = 0;
+    saveState();
+  }
+}
+
 btnReset.addEventListener('click', async () => {
   const confirmed = await showDialog('Zerar contadores', 'Tem certeza que deseja zerar todas as contagens? As pessoas serão mantidas.', true);
   if (confirmed) {
     if (appState.closers) {
-      appState.closers.forEach(c => c.count = 0);
+      appState.closers.forEach(c => {
+         c.count = 0;
+         c.confirmed = 0;
+         c.noShows = 0;
+      });
+      appState.leadsCount = 0;
+      if (leadsCountInput) leadsCountInput.value = 0;
       saveState();
     }
   }

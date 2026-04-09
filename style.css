@@ -203,6 +203,26 @@ body {
   transform: scale(0.95);
 }
 
+.btn-micro {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.btn-micro:hover {
+  border-color: #fff;
+  color: #fff;
+}
+
 /* MODAL */
 .modal-overlay {
   position: fixed;
