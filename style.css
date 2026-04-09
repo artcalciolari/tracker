@@ -318,6 +318,37 @@ body {
 }
 
 /* CALENDAR MODAL EVENTS */
+.custom-select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.4rem 2rem 0.4rem 1rem;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23ededed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+  background-repeat: no-repeat;
+  background-position: right 0.7rem top 50%;
+  transition: all 0.2s ease;
+}
+
+.custom-select:hover {
+  border-color: #666;
+}
+
+.custom-select:focus {
+  outline: none;
+  border-color: #fff;
+}
+
+.custom-select option {
+  background: #0a0a0a;
+  color: #fff;
+}
+
 .events-list {
   display: flex;
   flex-direction: column;
