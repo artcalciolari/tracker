@@ -2,7 +2,8 @@
 const STORAGE_KEY = 'appointmentTrackerState';
 let appState = {
   sdrName: '',
-  closers: [] // { id: string, name: string, count: number }
+  closers: [], // { id: string, name: string, count: number }
+  googleClientId: ''
 };
 
 // --- DOM Elements ---
@@ -25,6 +26,15 @@ const dialogTitle = document.getElementById('dialog-title');
 const dialogMessage = document.getElementById('dialog-message');
 const dialogBtnCancel = document.getElementById('dialog-btn-cancel');
 const dialogBtnConfirm = document.getElementById('dialog-btn-confirm');
+
+// --- Calendar Modal Elements ---
+const calendarModal = document.getElementById('calendar-modal');
+const calendarTitle = document.getElementById('calendar-title');
+const calendarEventsList = document.getElementById('calendar-events-list');
+const calendarBtnClose = document.getElementById('calendar-btn-close');
+
+const inputClientId = document.getElementById('input-client-id');
+const btnAuthGoogle = document.getElementById('btn-auth-google');
 
 function showDialog(title, message, isConfirm = false) {
   return new Promise((resolve) => {
@@ -70,8 +80,40 @@ function init() {
   if (appState && appState.closers && appState.closers.length > 0) {
     setupModal.classList.add('hidden');
     renderUI();
+    if(appState.googleClientId && typeof checkAuthReady === 'function'){
+      checkAuthReady();
+    }
   } else {
     setupModal.classList.remove('hidden');
+  }
+
+  if (btnAuthGoogle) {
+    btnAuthGoogle.addEventListener('click', async () => {
+      if (!appState || !appState.googleClientId) {
+        const clientId = prompt("Google Client ID não configurado.\nPor favor, insira o seu Client ID gerado no Google Cloud:");
+        if (clientId && clientId.trim() !== "") {
+          appState.googleClientId = clientId.trim();
+          saveState();
+          if (typeof checkAuthReady === 'function') checkAuthReady();
+        } else {
+          return;
+        }
+      }
+
+      try {
+        await handleGoogleAuth();
+        renderUI(); // re-render to show calendar icons if they were hidden
+      } catch (err) {
+        console.error("Auth failed:", err);
+        showDialog("Erro", "Falha na autenticação do Google. " + (err.error || err));
+      }
+    });
+  }
+
+  if (calendarBtnClose) {
+    calendarBtnClose.addEventListener('click', () => {
+      calendarModal.classList.add('hidden');
+    });
   }
 }
 
@@ -135,6 +177,7 @@ setupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   
   const sdrName = inputSdrName.value.trim();
+  const clientId = inputClientId ? inputClientId.value.trim() : '';
   const nameInputs = document.querySelectorAll('.closer-name-input');
   
   const closers = [];
@@ -159,10 +202,12 @@ setupForm.addEventListener('submit', async (e) => {
   if (sdrName && closers.length > 0) {
     appState = {
        sdrName,
-       closers
+       closers,
+       googleClientId: clientId
     };
     saveState();
     setupModal.classList.add('hidden');
+    if(clientId && typeof checkAuthReady === 'function') checkAuthReady();
   } else {
     await showDialog("Alerta", "Por favor, preencha o seu nome e adicione pelo menos um Closer/Pessoa.", false);
   }
@@ -205,6 +250,18 @@ function renderUI() {
 
     actionsContainer.appendChild(btnDecrement);
     actionsContainer.appendChild(btnIncrement);
+
+    // Adiciona botão "Ver Agenda" se estiver logado via OAuth
+    if (typeof gapi !== 'undefined' && gapi.client && gapi.client.getToken() !== null) {
+      const btnCalendar = document.createElement('button');
+      btnCalendar.className = 'btn-circle btn-calendar';
+      btnCalendar.innerHTML = '📅';
+      btnCalendar.title = "Ver Agenda Hoje";
+      btnCalendar.style.fontSize = '1.2rem';
+      btnCalendar.style.background = 'rgba(255, 255, 255, 0.1)';
+      btnCalendar.addEventListener('click', () => openCalendarModal(closer.name));
+      actionsContainer.appendChild(btnCalendar);
+    }
 
     const nameDisplay = document.createElement('div');
     nameDisplay.className = 'card-name';
@@ -254,6 +311,46 @@ btnClearAll.addEventListener('click', async () => {
     window.location.reload();
   }
 });
+
+// --- Modal Calendar Data ---
+async function openCalendarModal(closerName) {
+  calendarTitle.textContent = `Agenda: ${closerName}`;
+  calendarEventsList.innerHTML = `<p class="text-center" style="color: #a0aec0; padding: 2rem 0;">Buscando calendário...</p>`;
+  calendarModal.classList.remove('hidden');
+
+  const calendarId = await findCalendarForCloser(closerName);
+  
+  if (!calendarId) {
+    calendarEventsList.innerHTML = `<p class="text-center" style="color: #ff6b6b; padding: 2rem 0;">Agenda não encontrada enviando nome "${closerName}". Verifique se você tem acesso a ela e se o nome condiz.</p>`;
+    return;
+  }
+
+  const events = await getTodayEvents(calendarId);
+  calendarEventsList.innerHTML = '';
+
+  if (events.length === 0) {
+    calendarEventsList.innerHTML = `<p class="text-center" style="color: #51cf66; padding: 2rem 0;">Agenda livre hoje!</p>`;
+    return;
+  }
+
+  events.forEach(event => {
+    const eventItem = document.createElement('div');
+    eventItem.className = 'event-item';
+    
+    let timeString = 'Dia inteiro';
+    if(event.start.dateTime) {
+       const startDate = new Date(event.start.dateTime);
+       const endDate = new Date(event.end.dateTime);
+       timeString = `${startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})} - ${endDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
+    }
+
+    eventItem.innerHTML = `
+      <div class="event-time">${timeString}</div>
+      <div class="event-title">${event.summary || '(Sem título)'}</div>
+    `;
+    calendarEventsList.appendChild(eventItem);
+  });
+}
 
 // Start app
 document.addEventListener('DOMContentLoaded', init);

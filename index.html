@@ -7,6 +7,9 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Google API & Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
   <!-- HEADER -->
@@ -19,6 +22,7 @@
       </p>
     </div>
     <div class="header-right">
+      <button id="btn-auth-google" class="btn btn-primary">Conectar com Google</button>
       <button id="btn-reset" class="btn btn-secondary">Resetar</button>
       <button id="btn-clear-all" class="btn btn-danger">Limpar Tudo</button>
     </div>
@@ -57,6 +61,12 @@
           <label for="checkbox-cafofo">Incluir "Cafofo" como vendedor?</label>
         </div>
 
+        <div class="form-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+          <label for="input-client-id">Google Client ID (Opcional - Para ler agendas)</label>
+          <input type="text" id="input-client-id" placeholder="Ex: 12345-abcde.apps.googleusercontent.com">
+          <p style="font-size: 0.75rem; color: #a0aec0; margin-top: 0.5rem; line-height: 1.4;">Se preenchido, você poderá ver a agenda dos seus closers diretamente aqui. O nome da pessoa deve coincidir com o nome da agenda no Google.</p>
+        </div>
+
         <button type="submit" class="btn btn-primary btn-block">Salvar e Começar</button>
       </form>
     </div>
@@ -74,6 +84,22 @@
     </div>
   </div>
 
+  <!-- MODAL DE AGENDA -->
+  <div id="calendar-modal" class="modal-overlay hidden" style="z-index: 1500;">
+    <div class="modal glassmorphism" style="max-width: 500px; width: 90%;">
+      <h2 id="calendar-title">Agenda: Nome</h2>
+      <p class="modal-subtitle">Reuniões de hoje</p>
+      
+      <div id="calendar-events-list" class="events-list">
+        <!-- Eventos serão injetados aqui -->
+        <p class="text-center" style="color: #a0aec0; padding: 2rem 0;">Carregando...</p>
+      </div>
+
+      <button id="calendar-btn-close" class="btn btn-secondary btn-block" style="margin-top: 1.5rem;">Fechar</button>
+    </div>
+  </div>
+
+  <script src="google_calendar.js"></script>
   <script src="main.js"></script>
 </body>
 </html>
