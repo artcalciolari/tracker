@@ -196,6 +196,7 @@ function loadState() {
     try {
       appState = JSON.parse(stored);
       if (appState.leadsCount === undefined) appState.leadsCount = 0;
+      if (!appState.contactedEvents) appState.contactedEvents = [];
       if (appState.closers) {
         appState.closers.forEach(c => {
            if (c.confirmed === undefined) c.confirmed = 0;
@@ -277,7 +278,8 @@ setupForm.addEventListener('submit', async (e) => {
     appState = {
        sdrName,
        closers,
-       leadsCount: 0
+       leadsCount: 0,
+       contactedEvents: []
     };
     saveState();
     setupModal.classList.add('hidden');
@@ -513,6 +515,7 @@ btnReset.addEventListener('click', async () => {
          c.notes = '';
       });
       appState.leadsCount = 0;
+      appState.contactedEvents = [];
       if (leadsCountInput) leadsCountInput.value = 0;
       saveState();
     }
@@ -665,15 +668,41 @@ async function loadQuickGlance() {
        timeString = startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
     }
     
+    const isContacted = appState.contactedEvents && appState.contactedEvents.includes(event.id);
     const item = document.createElement('div');
     item.className = 'quick-glance-item';
+    
     item.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: start;">
-        <h4 style="color: #fff; margin:0; font-size: 0.95rem;">${event.summary || '(Sem título)'}</h4>
-        <span style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 4px; color: #cbd5e0; line-height: 1.2;">${timeString}</span>
+      <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+        <input type="checkbox" class="event-checkbox" ${isContacted ? 'checked' : ''} style="margin-top: 0.25rem; width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);">
+        <div class="event-content" style="flex: 1; opacity: ${isContacted ? '0.4' : '1'}; transition: opacity 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <h4 style="color: #fff; margin:0; font-size: 0.95rem; text-decoration: ${isContacted ? 'line-through' : 'none'};">${event.summary || '(Sem título)'}</h4>
+            <span style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 4px; color: #cbd5e0; line-height: 1.2;">${timeString}</span>
+          </div>
+          <p style="margin-top: 0.5rem; margin-bottom: 0; font-size: 0.8rem; color: #a0aec0; font-weight: 500;">👤 ${event.closerDisplayName}</p>
+        </div>
       </div>
-      <p style="margin-top: 0.5rem; margin-bottom: 0; font-size: 0.8rem; color: #a0aec0; font-weight: 500;">👤 ${event.closerDisplayName}</p>
     `;
+    
+    const checkbox = item.querySelector('.event-checkbox');
+    const contentRow = item.querySelector('.event-content');
+    const eventTitle = item.querySelector('h4');
+    
+    checkbox.addEventListener('change', (e) => {
+      if (!appState.contactedEvents) appState.contactedEvents = [];
+      if (e.target.checked) {
+        if (!appState.contactedEvents.includes(event.id)) appState.contactedEvents.push(event.id);
+        contentRow.style.opacity = '0.4';
+        eventTitle.style.textDecoration = 'line-through';
+      } else {
+        appState.contactedEvents = appState.contactedEvents.filter(id => id !== event.id);
+        contentRow.style.opacity = '1';
+        eventTitle.style.textDecoration = 'none';
+      }
+      saveState();
+    });
+
     quickGlanceContent.appendChild(item);
   });
 }
@@ -756,11 +785,37 @@ async function openConfirmModal(closerName) {
        attendeesHtml = `<div style="font-size: 0.85rem; color: #f6ad55; margin-top: 0.5rem;">⚠️ Nenhum convidado (e-mail) associado.</div>`;
     }
 
+    const isContacted = appState.contactedEvents && appState.contactedEvents.includes(event.id);
+
     eventItem.innerHTML = `
-      <div class="event-time" style="color: #ed8936;">${timeString}</div>
-      <div class="event-title" style="font-size: 1.1rem; margin-top: 0.2rem; margin-bottom: 0.5rem;">${event.summary || '(Sem título)'}</div>
-      ${attendeesHtml}
+      <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+        <input type="checkbox" class="modal-event-checkbox" ${isContacted ? 'checked' : ''} style="margin-top: 0.35rem; width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);">
+        <div class="modal-event-content" style="flex: 1; opacity: ${isContacted ? '0.4' : '1'}; transition: opacity 0.2s;">
+          <div class="event-time" style="color: #ed8936;">${timeString}</div>
+          <div class="event-title" style="font-size: 1.1rem; margin-top: 0.2rem; margin-bottom: 0.5rem; text-decoration: ${isContacted ? 'line-through' : 'none'};">${event.summary || '(Sem título)'}</div>
+          ${attendeesHtml}
+        </div>
+      </div>
     `;
+
+    const checkbox = eventItem.querySelector('.modal-event-checkbox');
+    const contentRow = eventItem.querySelector('.modal-event-content');
+    const eventTitle = eventItem.querySelector('.event-title');
+    
+    checkbox.addEventListener('change', (e) => {
+      if (!appState.contactedEvents) appState.contactedEvents = [];
+      if (e.target.checked) {
+        if (!appState.contactedEvents.includes(event.id)) appState.contactedEvents.push(event.id);
+        contentRow.style.opacity = '0.4';
+        eventTitle.style.textDecoration = 'line-through';
+      } else {
+        appState.contactedEvents = appState.contactedEvents.filter(id => id !== event.id);
+        contentRow.style.opacity = '1';
+        eventTitle.style.textDecoration = 'none';
+      }
+      saveState();
+    });
+
     confirmEventsList.appendChild(eventItem);
   });
 }
