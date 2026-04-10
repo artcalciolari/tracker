@@ -146,7 +146,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 240px;
+  width: 260px;
   transition: border-color 0.3s ease, transform 0.3s ease;
 }
 
@@ -173,10 +173,14 @@ body {
   letter-spacing: 2px;
 }
 
-.card-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+.actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  justify-items: center;
+  align-items: center;
 }
 
 .btn-circle {

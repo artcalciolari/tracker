@@ -306,13 +306,9 @@ function renderUI() {
     countDisplay.className = 'card-count';
     countDisplay.textContent = closer.count;
     
-    // Actions Wrapper
-    const actionsWrapper = document.createElement('div');
-    actionsWrapper.className = 'actions-wrapper';
-
-    // Primary Actions (+ esquerda / - direita)
-    const primaryActions = document.createElement('div');
-    primaryActions.className = 'primary-actions';
+    // Actions Grid (2x2)
+    const actionsGrid = document.createElement('div');
+    actionsGrid.className = 'actions-grid';
 
     const btnIncrement = document.createElement('button');
     btnIncrement.className = 'btn-text-action';
@@ -326,14 +322,19 @@ function renderUI() {
     btnDecrement.setAttribute('aria-label', `Diminuir de ${closer.name}`);
     btnDecrement.addEventListener('click', () => decrementCount(closer.id));
 
-    primaryActions.appendChild(btnIncrement);
-    primaryActions.appendChild(btnDecrement);
-    actionsWrapper.appendChild(primaryActions);
+    // Linha 1: [ + ] na coluna 1 e [ - ] na coluna 2
+    actionsGrid.appendChild(btnIncrement);
+    actionsGrid.appendChild(btnDecrement);
 
     // Adiciona botão "Ver Agenda" se estiver logado via OAuth e não for o Cafofo
     if (closer.name !== 'Cafofo' && typeof gapi !== 'undefined' && gapi.client && gapi.client.getToken() !== null) {
-      const secondaryActions = document.createElement('div');
-      secondaryActions.className = 'secondary-actions';
+      const btnConfirm = document.createElement('button');
+      btnConfirm.className = 'btn-circle btn-confirm';
+      btnConfirm.innerHTML = '📞';
+      btnConfirm.title = "Confirmar Reuniões";
+      btnConfirm.style.fontSize = '1.2rem';
+      btnConfirm.style.background = 'rgba(255, 255, 255, 0.1)';
+      btnConfirm.addEventListener('click', () => openConfirmModal(closer.name));
 
       const btnCalendar = document.createElement('button');
       btnCalendar.className = 'btn-circle btn-calendar';
@@ -342,18 +343,10 @@ function renderUI() {
       btnCalendar.style.fontSize = '1.2rem';
       btnCalendar.style.background = 'rgba(255, 255, 255, 0.1)';
       btnCalendar.addEventListener('click', () => openCalendarModal(closer.name));
-      secondaryActions.appendChild(btnCalendar);
 
-      const btnConfirm = document.createElement('button');
-      btnConfirm.className = 'btn-circle btn-confirm';
-      btnConfirm.innerHTML = '📞';
-      btnConfirm.title = "Confirmar Reuniões";
-      btnConfirm.style.fontSize = '1.2rem';
-      btnConfirm.style.background = 'rgba(255, 255, 255, 0.1)';
-      btnConfirm.addEventListener('click', () => openConfirmModal(closer.name));
-      secondaryActions.appendChild(btnConfirm);
-
-      actionsWrapper.appendChild(secondaryActions);
+      // Linha 2: [ Telefone ] na coluna 1 e [ Calendário ] na coluna 2
+      actionsGrid.appendChild(btnConfirm);
+      actionsGrid.appendChild(btnCalendar);
     }
 
     const nameDisplay = document.createElement('div');
@@ -361,7 +354,7 @@ function renderUI() {
     nameDisplay.textContent = closer.name;
 
     card.appendChild(countDisplay);
-    card.appendChild(actionsWrapper);
+    card.appendChild(actionsGrid);
     card.appendChild(nameDisplay);
     
     if (closer.name !== 'Cafofo') {
