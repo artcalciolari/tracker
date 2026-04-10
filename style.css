@@ -204,6 +204,30 @@ body {
   transform: scale(0.95);
 }
 
+.btn-text-action {
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  font-size: 2.2rem;
+  font-weight: 500;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-text-action:hover {
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.btn-text-action:active {
+  transform: scale(0.95);
+}
+
 .btn-micro {
   background: transparent;
   color: var(--text-muted);

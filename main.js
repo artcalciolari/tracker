@@ -310,24 +310,24 @@ function renderUI() {
     const actionsWrapper = document.createElement('div');
     actionsWrapper.className = 'actions-wrapper';
 
-    // Primary Actions (+ / -)
+    // Primary Actions (+ esquerda / - direita)
     const primaryActions = document.createElement('div');
     primaryActions.className = 'primary-actions';
 
-    const btnDecrement = document.createElement('button');
-    btnDecrement.className = 'btn-circle';
-    btnDecrement.innerHTML = '-';
-    btnDecrement.setAttribute('aria-label', `Diminuir de ${closer.name}`);
-    btnDecrement.addEventListener('click', () => decrementCount(closer.id));
-    
     const btnIncrement = document.createElement('button');
-    btnIncrement.className = 'btn-circle';
+    btnIncrement.className = 'btn-text-action';
     btnIncrement.innerHTML = '+';
     btnIncrement.setAttribute('aria-label', `Incrementar para ${closer.name}`);
     btnIncrement.addEventListener('click', () => incrementCount(closer.id));
+    
+    const btnDecrement = document.createElement('button');
+    btnDecrement.className = 'btn-text-action';
+    btnDecrement.innerHTML = '−';
+    btnDecrement.setAttribute('aria-label', `Diminuir de ${closer.name}`);
+    btnDecrement.addEventListener('click', () => decrementCount(closer.id));
 
-    primaryActions.appendChild(btnDecrement);
     primaryActions.appendChild(btnIncrement);
+    primaryActions.appendChild(btnDecrement);
     actionsWrapper.appendChild(primaryActions);
 
     // Adiciona botão "Ver Agenda" se estiver logado via OAuth e não for o Cafofo
