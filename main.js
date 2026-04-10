@@ -550,7 +550,9 @@ async function openCalendarModal(closerName, days = null) {
     return;
   }
 
-  const events = await getEventsForDays(calendarId, days);
+  let events = await getEventsForDays(calendarId, days);
+  events = events.filter(e => e.start && e.start.dateTime); // Descarta "dia inteiro"
+
   calendarEventsList.innerHTML = '';
 
   if (events.length === 0) {
@@ -562,18 +564,16 @@ async function openCalendarModal(closerName, days = null) {
     const eventItem = document.createElement('div');
     eventItem.className = 'event-item';
     
-    let timeString = 'Dia inteiro';
-    if(event.start.dateTime) {
-       const startDate = new Date(event.start.dateTime);
-       const endDate = new Date(event.end.dateTime);
+    let timeString = '';
+    const startDate = new Date(event.start.dateTime);
+    const endDate = new Date(event.end.dateTime);
        
-       let datePrefix = '';
-       if (days > 1) {
-           datePrefix = startDate.toLocaleDateString('pt-BR', {day: '2-digit', month:'2-digit'}) + ' • ';
-       }
-
-       timeString = `${datePrefix}${startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})} - ${endDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
+    let datePrefix = '';
+    if (days > 1) {
+       datePrefix = startDate.toLocaleDateString('pt-BR', {day: '2-digit', month:'2-digit'}) + ' • ';
     }
+
+    timeString = `${datePrefix}${startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})} - ${endDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
 
     eventItem.innerHTML = `
       <div class="event-time">${timeString}</div>
@@ -629,15 +629,9 @@ async function loadQuickGlance() {
     const events = await getEventsForDays(calendarId, 1);
     
     const todayEvents = events.filter(e => {
-       let eDate;
-       if (e.start && e.start.dateTime) {
-           eDate = new Date(e.start.dateTime);
-       } else if (e.start && e.start.date) {
-           const parts = e.start.date.split('-');
-           if(parts.length === 3) eDate = new Date(parts[0], parts[1]-1, parts[2]);
-       }
-       if(eDate) return eDate.toLocaleDateString('pt-BR') === todayStr;
-       return false;
+       if (!e.start || !e.start.dateTime) return false;
+       const eDate = new Date(e.start.dateTime);
+       return eDate.toLocaleDateString('pt-BR') === todayStr;
     });
     
     const toConfirm = todayEvents.filter(e => isTargetEvent(e, appState.sdrName, closer.name));
@@ -662,11 +656,8 @@ async function loadQuickGlance() {
   });
   
   validEvents.forEach(event => {
-    let timeString = 'Dia inteiro';
-    if(event.start && event.start.dateTime) {
-       const startDate = new Date(event.start.dateTime);
-       timeString = startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-    }
+    const startDate = new Date(event.start.dateTime);
+    const timeString = startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
     
     const isContacted = appState.contactedEvents && appState.contactedEvents.includes(event.id);
     const item = document.createElement('div');
@@ -735,18 +726,9 @@ async function openConfirmModal(closerName) {
   const targetStr = (filterType === 'today') ? todayStr : tomorrowStr;
 
   const events = rawEvents.filter(e => {
-     let eDate;
-     if (e.start && e.start.dateTime) {
-         eDate = new Date(e.start.dateTime);
-     } else if (e.start && e.start.date) {
-         const parts = e.start.date.split('-');
-         if(parts.length === 3) eDate = new Date(parts[0], parts[1]-1, parts[2]);
-     }
-     
-     if(eDate) {
-         return eDate.toLocaleDateString('pt-BR') === targetStr;
-     }
-     return false;
+     if (!e.start || !e.start.dateTime) return false;
+     const eDate = new Date(e.start.dateTime);
+     return eDate.toLocaleDateString('pt-BR') === targetStr;
   });
 
   confirmEventsList.innerHTML = '';
@@ -763,12 +745,9 @@ async function openConfirmModal(closerName) {
     const eventItem = document.createElement('div');
     eventItem.className = 'event-item';
     
-    let timeString = 'Dia inteiro';
-    if(event.start.dateTime) {
-       const startDate = new Date(event.start.dateTime);
-       const datePrefix = startDate.toLocaleDateString('pt-BR', {day: '2-digit', month:'2-digit'}) + ' • ';
-       timeString = `${datePrefix}${startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
-    }
+    const startDate = new Date(event.start.dateTime);
+    const datePrefix = startDate.toLocaleDateString('pt-BR', {day: '2-digit', month:'2-digit'}) + ' • ';
+    const timeString = `${datePrefix}${startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
 
     let attendeesHtml = '';
     if (event.attendees && event.attendees.length > 0) {
