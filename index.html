@@ -23,6 +23,7 @@
       <div class="leads-container" style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
         <label for="leads-count-input" style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">Leads Contatados:</label>
         <input type="number" id="leads-count-input" value="0" min="0" style="width: 70px; padding: 0.3rem; background: #0a0a0a; border: 1px solid #333; color: #fff; border-radius: 6px; text-align: center; font-size: 1.1rem; font-weight: 600;">
+        <button id="btn-leads-inc" class="btn-micro" style="width: 32px; height: 32px; font-size: 1.2rem; border-color: #333; color: #fff; background: rgba(255,255,255,0.05);" title="Adicionar Lead">+</button>
       </div>
     </div>
     <div class="header-right">
@@ -79,6 +80,28 @@
         <button id="dialog-btn-cancel" class="btn" style="border-color: #333; flex: 1;">Cancelar</button>
         <button id="dialog-btn-confirm" class="btn btn-primary" style="flex: 1;">OK</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMAÇÃO DE REUNIÕES -->
+  <div id="confirm-modal" class="modal-overlay hidden" style="z-index: 1500;">
+    <div class="modal glassmorphism" style="max-width: 550px; width: 90%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <h2 id="confirm-title" style="margin-bottom: 0;">Confirmar Reuniões</h2>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <select id="confirm-filter-input" class="custom-select">
+            <option value="today">Hoje</option>
+            <option value="tomorrow">Amanhã</option>
+          </select>
+        </div>
+      </div>
+      <p class="modal-subtitle">Reuniões que precisam de contato (tag <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">[SDR Closer]</code> indicando agendamento)</p>
+      
+      <div id="confirm-events-list" class="events-list">
+        <p class="text-center" style="color: #a0aec0; padding: 2rem 0;">Carregando...</p>
+      </div>
+
+      <button id="confirm-btn-close" class="btn btn-secondary btn-block" style="margin-top: 1.5rem;">Fechar</button>
     </div>
   </div>
 

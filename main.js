@@ -34,7 +34,16 @@ const calendarEventsList = document.getElementById('calendar-events-list');
 const calendarBtnClose = document.getElementById('calendar-btn-close');
 const calendarDaysInput = document.getElementById('calendar-days-input');
 const leadsCountInput = document.getElementById('leads-count-input');
+const btnLeadsInc = document.getElementById('btn-leads-inc');
 
+// --- Confirm Modal Elements ---
+const confirmModal = document.getElementById('confirm-modal');
+const confirmTitle = document.getElementById('confirm-title');
+const confirmEventsList = document.getElementById('confirm-events-list');
+const confirmBtnClose = document.getElementById('confirm-btn-close');
+const confirmFilterInput = document.getElementById('confirm-filter-input');
+
+let activeConfirmCloser = null;
 let activeCalendarName = null;
 
 const btnAuthGoogle = document.getElementById('btn-auth-google');
@@ -124,6 +133,28 @@ function init() {
     leadsCountInput.addEventListener('change', (e) => {
        appState.leadsCount = parseInt(e.target.value) || 0;
        saveState();
+    });
+  }
+
+  if (btnLeadsInc) {
+    btnLeadsInc.addEventListener('click', () => {
+      appState.leadsCount = (appState.leadsCount || 0) + 1;
+      leadsCountInput.value = appState.leadsCount;
+      saveState();
+    });
+  }
+
+  if (confirmBtnClose) {
+    confirmBtnClose.addEventListener('click', () => {
+      confirmModal.classList.add('hidden');
+    });
+  }
+
+  if (confirmFilterInput) {
+    confirmFilterInput.addEventListener('change', () => {
+      if (activeConfirmCloser) {
+        openConfirmModal(activeConfirmCloser);
+      }
     });
   }
 }
@@ -280,11 +311,20 @@ function renderUI() {
       const btnCalendar = document.createElement('button');
       btnCalendar.className = 'btn-circle btn-calendar';
       btnCalendar.innerHTML = '📅';
-      btnCalendar.title = "Ver Agenda Hoje";
+      btnCalendar.title = "Ver Agenda Geral";
       btnCalendar.style.fontSize = '1.2rem';
       btnCalendar.style.background = 'rgba(255, 255, 255, 0.1)';
       btnCalendar.addEventListener('click', () => openCalendarModal(closer.name));
       actionsContainer.appendChild(btnCalendar);
+
+      const btnConfirm = document.createElement('button');
+      btnConfirm.className = 'btn-circle btn-confirm';
+      btnConfirm.innerHTML = '📞';
+      btnConfirm.title = "Confirmar Reuniões";
+      btnConfirm.style.fontSize = '1.2rem';
+      btnConfirm.style.background = 'rgba(255, 255, 255, 0.1)';
+      btnConfirm.addEventListener('click', () => openConfirmModal(closer.name));
+      actionsContainer.appendChild(btnConfirm);
     }
 
     const nameDisplay = document.createElement('div');
@@ -515,6 +555,115 @@ async function openCalendarModal(closerName, days = null) {
       <div class="event-title">${event.summary || '(Sem título)'}</div>
     `;
     calendarEventsList.appendChild(eventItem);
+  });
+}
+
+// --- Confirm Modal Data ---
+async function openConfirmModal(closerName) {
+  activeConfirmCloser = closerName;
+  const filterType = confirmFilterInput ? confirmFilterInput.value : 'today';
+
+  confirmTitle.textContent = `Confirmar Reuniões: ${closerName}`;
+  confirmEventsList.innerHTML = `<p class="text-center" style="color: #a0aec0; padding: 2rem 0;">Buscando agendamentos...</p>`;
+  confirmModal.classList.remove('hidden');
+
+  const calendarId = await findCalendarForCloser(closerName);
+  
+  if (!calendarId) {
+    confirmEventsList.innerHTML = `<p class="text-center" style="color: #ff6b6b; padding: 2rem 0;">Agenda não encontrada enviando nome "${closerName}".</p>`;
+    return;
+  }
+
+  // Busca eventos para próximos 2 dias (inclui hoje e amanhã)
+  const rawEvents = await getEventsForDays(calendarId, 2);
+  
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('pt-BR');
+  const tom = new Date(now);
+  tom.setDate(tom.getDate() + 1);
+  const tomorrowStr = tom.toLocaleDateString('pt-BR');
+  
+  const targetStr = (filterType === 'today') ? todayStr : tomorrowStr;
+
+  const events = rawEvents.filter(e => {
+     let eDate;
+     if (e.start && e.start.dateTime) {
+         eDate = new Date(e.start.dateTime);
+     } else if (e.start && e.start.date) {
+         const parts = e.start.date.split('-');
+         if(parts.length === 3) eDate = new Date(parts[0], parts[1]-1, parts[2]);
+     }
+     
+     if(eDate) {
+         return eDate.toLocaleDateString('pt-BR') === targetStr;
+     }
+     return false;
+  });
+
+  confirmEventsList.innerHTML = '';
+
+  const sdrFirst = (appState.sdrName || '').trim().split(' ')[0].toLowerCase();
+  const closerFirst = closerName.trim().split(' ')[0].toLowerCase();
+  const sdrA = sdrFirst.charAt(0);
+  const closA = closerFirst.charAt(0);
+  const sdrFull = (appState.sdrName || '').toLowerCase().replace(/\s/g, '');
+  const closerFull = closerName.toLowerCase().replace(/\s/g, '');
+
+  const toConfirm = events.filter(event => {
+    if (!event.summary) return false;
+    const match = event.summary.match(/\[(.*?)\]/);
+    if (!match) return false;
+    
+    // O texto que está dentro de [ ] sem espaços
+    const inside = match[1].toLowerCase().replace(/\s/g, '').replace(/-/g, '');
+    
+    const nameMatch = inside === (sdrFirst + closerFirst);
+    const initialMatch = inside === (sdrA + closA);
+    const fullMatch = inside === (sdrFull + closerFull);
+    const reverseMatch = inside === (closerFirst + sdrFirst);
+    const reverseInitMatch = inside === (closA + sdrA);
+    
+    return nameMatch || initialMatch || fullMatch || reverseMatch || reverseInitMatch;
+  });
+
+  if (toConfirm.length === 0) {
+    const labelData = filterType === 'today' ? 'hoje' : 'amanhã';
+    confirmEventsList.innerHTML = `<p class="text-center" style="color: #51cf66; padding: 2rem 0;">Nenhuma reunião para este SDR x Closer agendada para ${labelData}.</p>`;
+    return;
+  }
+
+  toConfirm.forEach(event => {
+    const eventItem = document.createElement('div');
+    eventItem.className = 'event-item';
+    
+    let timeString = 'Dia inteiro';
+    if(event.start.dateTime) {
+       const startDate = new Date(event.start.dateTime);
+       const datePrefix = startDate.toLocaleDateString('pt-BR', {day: '2-digit', month:'2-digit'}) + ' • ';
+       timeString = `${datePrefix}${startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
+    }
+
+    let attendeesHtml = '';
+    if (event.attendees && event.attendees.length > 0) {
+       const leadEmails = event.attendees
+          .filter(a => !a.self) // Exclui o calendário do próprio closer
+          .map(a => `<a href="mailto:${a.email}" target="_blank" style="color: #63b3ed; text-decoration: none; font-weight: 500;">${a.email}</a>`);
+       
+       if (leadEmails.length > 0) {
+          attendeesHtml = `<div style="font-size: 0.9rem; color: #e2e8f0; margin-top: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px; border: 1px solid #333;"><strong>📧 E-mail do Lead (CRM):</strong><br> ${leadEmails.join('<br>')}</div>`;
+       } else {
+          attendeesHtml = `<div style="font-size: 0.85rem; color: #a0aec0; margin-top: 0.5rem;">Apenas o e-mail do agendador encontrado.</div>`;
+       }
+    } else {
+       attendeesHtml = `<div style="font-size: 0.85rem; color: #f6ad55; margin-top: 0.5rem;">⚠️ Nenhum convidado (e-mail) associado.</div>`;
+    }
+
+    eventItem.innerHTML = `
+      <div class="event-time" style="color: #ed8936;">${timeString}</div>
+      <div class="event-title" style="font-size: 1.1rem; margin-top: 0.2rem; margin-bottom: 0.5rem;">${event.summary || '(Sem título)'}</div>
+      ${attendeesHtml}
+    `;
+    confirmEventsList.appendChild(eventItem);
   });
 }
 
