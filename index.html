@@ -12,6 +12,21 @@
   <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
+  <!-- SIDEBAR (Quick Glance) -->
+  <div id="quick-glance-sidebar" class="sidebar hidden">
+    <div class="sidebar-header">
+      <h3>Tarefas de Hoje</h3>
+      <button id="btn-close-sidebar" class="btn-micro" style="border:none; font-size:1.5rem; color:#fff;">&times;</button>
+    </div>
+    <div id="quick-glance-content" class="sidebar-content">
+      <p class="text-muted text-center" style="margin-top: 2rem;">Aguardando login no Google...</p>
+    </div>
+  </div>
+
+  <button id="btn-toggle-sidebar" class="floating-toggle">
+    <span style="writing-mode: vertical-rl; transform: rotate(180deg);">Leads Hoje</span>
+  </button>
+
   <!-- HEADER -->
   <header class="app-header">
     <div class="header-left">

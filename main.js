@@ -36,6 +36,12 @@ const calendarDaysInput = document.getElementById('calendar-days-input');
 const leadsCountInput = document.getElementById('leads-count-input');
 const btnLeadsInc = document.getElementById('btn-leads-inc');
 
+// --- Sidebar Elements ---
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const btnCloseSidebar = document.getElementById('btn-close-sidebar');
+const quickGlanceSidebar = document.getElementById('quick-glance-sidebar');
+const quickGlanceContent = document.getElementById('quick-glance-content');
+
 // --- Confirm Modal Elements ---
 const confirmModal = document.getElementById('confirm-modal');
 const confirmTitle = document.getElementById('confirm-title');
@@ -155,6 +161,19 @@ function init() {
       if (activeConfirmCloser) {
         openConfirmModal(activeConfirmCloser);
       }
+    });
+  }
+
+  if (btnToggleSidebar) {
+    btnToggleSidebar.addEventListener('click', () => {
+      quickGlanceSidebar.classList.remove('hidden');
+      loadQuickGlance();
+    });
+  }
+
+  if (btnCloseSidebar) {
+    btnCloseSidebar.addEventListener('click', () => {
+      quickGlanceSidebar.classList.add('hidden');
     });
   }
 }
@@ -287,9 +306,13 @@ function renderUI() {
     countDisplay.className = 'card-count';
     countDisplay.textContent = closer.count;
     
-    // Action buttons container
-    const actionsContainer = document.createElement('div');
-    actionsContainer.className = 'card-actions';
+    // Actions Wrapper
+    const actionsWrapper = document.createElement('div');
+    actionsWrapper.className = 'actions-wrapper';
+
+    // Primary Actions (+ / -)
+    const primaryActions = document.createElement('div');
+    primaryActions.className = 'primary-actions';
 
     const btnDecrement = document.createElement('button');
     btnDecrement.className = 'btn-circle';
@@ -303,11 +326,15 @@ function renderUI() {
     btnIncrement.setAttribute('aria-label', `Incrementar para ${closer.name}`);
     btnIncrement.addEventListener('click', () => incrementCount(closer.id));
 
-    actionsContainer.appendChild(btnDecrement);
-    actionsContainer.appendChild(btnIncrement);
+    primaryActions.appendChild(btnDecrement);
+    primaryActions.appendChild(btnIncrement);
+    actionsWrapper.appendChild(primaryActions);
 
     // Adiciona botão "Ver Agenda" se estiver logado via OAuth e não for o Cafofo
     if (closer.name !== 'Cafofo' && typeof gapi !== 'undefined' && gapi.client && gapi.client.getToken() !== null) {
+      const secondaryActions = document.createElement('div');
+      secondaryActions.className = 'secondary-actions';
+
       const btnCalendar = document.createElement('button');
       btnCalendar.className = 'btn-circle btn-calendar';
       btnCalendar.innerHTML = '📅';
@@ -315,7 +342,7 @@ function renderUI() {
       btnCalendar.style.fontSize = '1.2rem';
       btnCalendar.style.background = 'rgba(255, 255, 255, 0.1)';
       btnCalendar.addEventListener('click', () => openCalendarModal(closer.name));
-      actionsContainer.appendChild(btnCalendar);
+      secondaryActions.appendChild(btnCalendar);
 
       const btnConfirm = document.createElement('button');
       btnConfirm.className = 'btn-circle btn-confirm';
@@ -324,7 +351,9 @@ function renderUI() {
       btnConfirm.style.fontSize = '1.2rem';
       btnConfirm.style.background = 'rgba(255, 255, 255, 0.1)';
       btnConfirm.addEventListener('click', () => openConfirmModal(closer.name));
-      actionsContainer.appendChild(btnConfirm);
+      secondaryActions.appendChild(btnConfirm);
+
+      actionsWrapper.appendChild(secondaryActions);
     }
 
     const nameDisplay = document.createElement('div');
@@ -332,7 +361,7 @@ function renderUI() {
     nameDisplay.textContent = closer.name;
 
     card.appendChild(countDisplay);
-    card.appendChild(actionsContainer);
+    card.appendChild(actionsWrapper);
     card.appendChild(nameDisplay);
     
     if (closer.name !== 'Cafofo') {
@@ -558,6 +587,104 @@ async function openCalendarModal(closerName, days = null) {
   });
 }
 
+function isTargetEvent(event, sdrName, closerName) {
+  if (!event.summary) return false;
+  const match = event.summary.match(/\[(.*?)\]/);
+  if (!match) return false;
+  
+  const inside = match[1].toLowerCase().replace(/\s/g, '').replace(/-/g, '');
+  
+  const sdrFirst = (sdrName || '').trim().split(' ')[0].toLowerCase();
+  const closerFirst = closerName.trim().split(' ')[0].toLowerCase();
+  const sdrA = sdrFirst.charAt(0);
+  const closA = closerFirst.charAt(0);
+  const sdrFull = (sdrName || '').toLowerCase().replace(/\s/g, '');
+  const closerFull = closerName.toLowerCase().replace(/\s/g, '');
+  
+  const nameMatch = inside === (sdrFirst + closerFirst);
+  const initialMatch = inside === (sdrA + closA);
+  const fullMatch = inside === (sdrFull + closerFull);
+  const reverseMatch = inside === (closerFirst + sdrFirst);
+  const reverseInitMatch = inside === (closA + sdrA);
+  
+  return nameMatch || initialMatch || fullMatch || reverseMatch || reverseInitMatch;
+}
+
+// --- Quick Glance Sidebar ---
+async function loadQuickGlance() {
+  if (!gapi || !gapi.client || gapi.client.getToken() === null) {
+    quickGlanceContent.innerHTML = `<p class="text-center" style="color: #a0aec0; margin-top:2rem;">Dica: Conecte o Google na tela principal primeiro.</p>`;
+    return;
+  }
+  
+  quickGlanceContent.innerHTML = `<p class="text-center" style="color: #a0aec0; margin-top:2rem;">Analisando agendas de hoje...</p>`;
+  
+  let validEvents = [];
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('pt-BR');
+  
+  for (const closer of appState.closers) {
+    if (closer.name === 'Cafofo') continue;
+    
+    const calendarId = await findCalendarForCloser(closer.name);
+    if (!calendarId) continue;
+    
+    // Fetch para hoje (days = 1 traz os eventos de hoje até 23:59)
+    const events = await getEventsForDays(calendarId, 1);
+    
+    const todayEvents = events.filter(e => {
+       let eDate;
+       if (e.start && e.start.dateTime) {
+           eDate = new Date(e.start.dateTime);
+       } else if (e.start && e.start.date) {
+           const parts = e.start.date.split('-');
+           if(parts.length === 3) eDate = new Date(parts[0], parts[1]-1, parts[2]);
+       }
+       if(eDate) return eDate.toLocaleDateString('pt-BR') === todayStr;
+       return false;
+    });
+    
+    const toConfirm = todayEvents.filter(e => isTargetEvent(e, appState.sdrName, closer.name));
+    
+    toConfirm.forEach(e => {
+       e.closerDisplayName = closer.name;
+       validEvents.push(e);
+    });
+  }
+  
+  quickGlanceContent.innerHTML = '';
+  
+  if (validEvents.length === 0) {
+    quickGlanceContent.innerHTML = `<p class="text-center" style="color: #51cf66; margin-top:2rem;">Nenhum agendamento com os critérios [SDR Closer] hoje!</p>`;
+    return;
+  }
+  
+  validEvents.sort((a,b) => {
+    const timeA = a.start && a.start.dateTime ? new Date(a.start.dateTime).getTime() : 0;
+    const timeB = b.start && b.start.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+    return timeA - timeB;
+  });
+  
+  validEvents.forEach(event => {
+    let timeString = 'Dia inteiro';
+    if(event.start && event.start.dateTime) {
+       const startDate = new Date(event.start.dateTime);
+       timeString = startDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+    }
+    
+    const item = document.createElement('div');
+    item.className = 'quick-glance-item';
+    item.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <h4 style="color: #fff; margin:0; font-size: 0.95rem;">${event.summary || '(Sem título)'}</h4>
+        <span style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 4px; color: #cbd5e0; line-height: 1.2;">${timeString}</span>
+      </div>
+      <p style="margin-top: 0.5rem; margin-bottom: 0; font-size: 0.8rem; color: #a0aec0; font-weight: 500;">👤 ${event.closerDisplayName}</p>
+    `;
+    quickGlanceContent.appendChild(item);
+  });
+}
+
 // --- Confirm Modal Data ---
 async function openConfirmModal(closerName) {
   activeConfirmCloser = closerName;
@@ -602,29 +729,7 @@ async function openConfirmModal(closerName) {
 
   confirmEventsList.innerHTML = '';
 
-  const sdrFirst = (appState.sdrName || '').trim().split(' ')[0].toLowerCase();
-  const closerFirst = closerName.trim().split(' ')[0].toLowerCase();
-  const sdrA = sdrFirst.charAt(0);
-  const closA = closerFirst.charAt(0);
-  const sdrFull = (appState.sdrName || '').toLowerCase().replace(/\s/g, '');
-  const closerFull = closerName.toLowerCase().replace(/\s/g, '');
-
-  const toConfirm = events.filter(event => {
-    if (!event.summary) return false;
-    const match = event.summary.match(/\[(.*?)\]/);
-    if (!match) return false;
-    
-    // O texto que está dentro de [ ] sem espaços
-    const inside = match[1].toLowerCase().replace(/\s/g, '').replace(/-/g, '');
-    
-    const nameMatch = inside === (sdrFirst + closerFirst);
-    const initialMatch = inside === (sdrA + closA);
-    const fullMatch = inside === (sdrFull + closerFull);
-    const reverseMatch = inside === (closerFirst + sdrFirst);
-    const reverseInitMatch = inside === (closA + sdrA);
-    
-    return nameMatch || initialMatch || fullMatch || reverseMatch || reverseInitMatch;
-  });
+  const toConfirm = events.filter(event => isTargetEvent(event, appState.sdrName, closerName));
 
   if (toConfirm.length === 0) {
     const labelData = filterType === 'today' ? 'hoje' : 'amanhã';
